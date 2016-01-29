@@ -3,6 +3,8 @@ Docker build of Loris IIIF Image Server
 
 Docker container running [Loris IIIF Image Server](https://github.com/loris-imageserver/loris)
 
+**Warning** : the actual version is a simple way to have loris works, but the server is the developpement werkzeug server with debugging enabled. Hence not suitable for developpement purpose.
+
 ### Use  pre-built image
 Download image from docker hub.
 
@@ -19,10 +21,16 @@ Use local Dockerfile to build image.
 
 Point your browser to `http://<Host or Container IP>:5004/01/02/0001.jp2/full/full/0/default.jpg`
 
+### Use your own image folder
+
+Add your image directory as a volume
+
+    $ docker run -d -v <your-img-folder>:/usr/local/share/images -p 5004:5004 <docker-image>
+
 ### Use samba to load images
 Add the images directory as a volume and mount on a Samba or sshd container. [(See svendowideit/samba)](https://registry.hub.docker.com/u/svendowideit/samba/)
 
-    $ docker run --name loris -v /usr/local/share/images -d -p 3000:3000 lorisimageserver/loris
+    $ docker run --name loris -v /usr/local/share/images -d -p 5004:5004 lorisimageserver/loris
     $ docker run --rm -v /usr/local/bin/docker:/docker -v /var/run/docker.sock:/docker.sock svendowideit/samba loris
     
 
