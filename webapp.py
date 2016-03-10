@@ -158,7 +158,14 @@ class LorisResponse(BaseResponse, CommonResponseDescriptorsMixin):
     def __init__(self, response=None, status=None, content_type=None):
         super(LorisResponse, self).__init__(response=response, status=status, content_type=content_type)
         self.headers['Link'] = '<%s>;rel="profile"' % (constants.COMPLIANCE,)
-        self.headers['Access-Control-Allow-Origin'] = "*"
+
+    def set_acao(self, request, regex=None):
+        if regex:
+            if regex.search(request.url_root):
+                self.headers['Access-Control-Allow-Origin'] = request.url_root
+        else:
+            self.headers['Access-Control-Allow-Origin'] = "*"
+
 
 class BadRequestResponse(LorisResponse):
     def __init__(self, message=None):
@@ -204,9 +211,13 @@ class Loris(object):
         self.enable_caching = _loris_config['enable_caching']
         self.redirect_canonical_image_request = _loris_config['redirect_canonical_image_request']
         self.redirect_id_slash_to_info = _loris_config['redirect_id_slash_to_info']
+        self.cors_regex = _loris_config.get('cors_regex', None)
+        if self.cors_regex:
+            self.cors_regex = re.compile(self.cors_regex)
 
         self.transformers = self._load_transformers()
         self.resolver = self._load_resolver()
+        self.max_size_above_full = _loris_config.get('max_size_above_full', 200)
 
         if self.enable_caching:
             self.info_cache = InfoCache(self.app_configs['img_info.InfoCache']['cache_dp'])
@@ -380,6 +391,7 @@ class Loris(object):
 
     def get_info(self, request, ident, base_uri):
         r = LorisResponse()
+        r.set_acao(request, self.cors_regex)
         try:
             info, last_mod = self._get_info(ident,request,base_uri)
         except ResolverException as re:
@@ -415,18 +427,25 @@ class Loris(object):
                         r.content_type = 'application/json'
                         l = '<http://iiif.io/api/image/2/context.json>;rel="http://www.w3.org/ns/json-ld#context";type="application/ld+json"'
                         r.headers['Link'] = '%s,%s' % (r.headers['Link'], l)
+                    # If interpolation is not allowed, we have to remove this 
+                    # value from info.json - but only if exists (cached ImageInfo might miss this)
+                    if self.max_size_above_full <= 100:
+                        try:
+                            info.profile[1]['supports'].remove('sizeAboveFull')
+                        except ValueError:
+                            pass
                     r.data = info.to_json()
         finally:
             return r
 
     def _get_info(self,ident,request,base_uri,src_fp=None,src_format=None):
         if self.enable_caching:
-            in_cache = ident in self.info_cache
+            in_cache = request in self.info_cache
         else:
             in_cache = False
 
         if in_cache:
-            return self.info_cache[ident]
+            return self.info_cache[request]
         else:
             if not all((src_fp, src_format)):
                 # get_img can pass in src_fp, src_format because it needs them
@@ -445,20 +464,15 @@ class Loris(object):
 
             # store
             if self.enable_caching:
-                # Elusive bug. For some reason, every once in a while, ident
-                # is the path on the file system rather than the URI.
-                # One thing that's confusing about it is that here 'ident' is
-                # used to mean the identifier slice of the request, and in the
-                # info cache it's used this way, but ImageInfo.ident is URI
-                # that goes in @id.
                 logger.debug('ident used to store %s: %s' % (ident,ident))
-                self.info_cache[ident] = info
+                self.info_cache[request] = info
                 # pick up the timestamp... :()
-                info,last_mod = self.info_cache[ident]
+                info,last_mod = self.info_cache[request]
             else:
                 last_mod = None
 
             return (info,last_mod)
+
 
     def get_img(self, request, ident, region, size, rotation, quality, target_fmt, base_uri):
         '''Get an Image.
@@ -470,10 +484,12 @@ class Loris(object):
 
         '''
         r = LorisResponse()
+        r.set_acao(request, self.cors_regex)
         # ImageRequest's Parameter attributes, i.e. RegionParameter etc. are
         # decorated with @property and not constructed until they are first
         # accessed, which mean we don't have to catch any exceptions here.
-        image_request = img.ImageRequest(ident, region, size, rotation, quality, target_fmt)
+        image_request = img.ImageRequest(ident, region, size, rotation,
+                                         quality, target_fmt)
 
         logger.debug('Image Request Path: %s' % (image_request.request_path,))
 
@@ -483,9 +499,8 @@ class Loris(object):
             in_cache = False
 
         if in_cache:
-            fp = self.img_cache[image_request]
+            fp, img_last_mod = self.img_cache[image_request]
             ims_hdr = request.headers.get('If-Modified-Since')
-            img_last_mod = datetime.utcfromtimestamp(path.getmtime(fp))
             # The stamp from the FS needs to be rounded using the same precision
             # as when went sent it, so for an accurate comparison turn it into
             # an http date and then parse it again :-( :
@@ -528,7 +543,19 @@ class Loris(object):
                 if image_request.quality not in info.profile[1]['qualities']:
                     return BadRequestResponse('"%s" quality is not available for this image' % (image_request.quality,))
 
-                # 4. Redirect if appropriate
+                # 4. Check if requested size is allowed
+                if self.max_size_above_full > 0: 
+                    max_width = image_request.region_param.pixel_w * self.max_size_above_full / 100
+                    max_height = image_request.region_param.pixel_h * self.max_size_above_full / 100
+                    if image_request.size_param.w > max_width or \
+                            image_request.size_param.h > max_height: 
+                        logger.debug('Requested image size exceeded allowed size:')
+                        logger.debug('width: %0.2f > %0.2f, height: %0.2f > %0.2f' % 
+                            (image_request.size_param.w, max_width, 
+                                image_request.size_param.h, max_height))
+                        return NotFoundResponse('Resolution not available')
+
+                # 5. Redirect if appropriate
                 if self.redirect_canonical_image_request:
                     if not image_request.is_canonical:
                         logger.debug('Attempting redirect to %s' % (image_request.canonical_request_path,))
@@ -536,7 +563,7 @@ class Loris(object):
                         r.status_code = 301
                         return r
 
-                # 5. Make an image
+                # 6. Make an image
                 fp = self._make_image(image_request, src_fp, src_format)
 
             except ResolverException as re:
@@ -561,7 +588,6 @@ class Loris(object):
 possible that there was a problem with the source file
 (%s).''' % (str(e),src_fp)
                 return ServerSideErrorResponse(msg)
-
         r.content_type = constants.FORMATS_BY_EXTENSION[target_fmt]
         r.status_code = 200
         r.last_modified = datetime.utcfromtimestamp(path.getctime(fp))
@@ -586,7 +612,7 @@ possible that there was a problem with the source file
         '''
         # figure out paths, make dirs
         if self.enable_caching:
-            target_fp = self.img_cache.get_cache_path(image_request)
+            target_fp = self.img_cache.get_canonical_cache_path(image_request)
             target_dp = path.dirname(target_fp)
             if not path.exists(target_dp):
                 makedirs(target_dp)
@@ -601,7 +627,6 @@ possible that there was a problem with the source file
         transformer = self.transformers[src_format]
 
         transformer.transform(src_fp, target_fp, image_request)
-        #  cache if caching (this makes symlinks for next time)
         if self.enable_caching:
             self.img_cache[image_request] = target_fp
         return target_fp
@@ -616,7 +641,11 @@ if __name__ == '__main__':
     extra_files.append(conf_fp)
 
     sys.path.append(path.join(project_dp)) # to find any local resolvers
+
     app = create_app(debug=False, config_file_path=conf_fp) # or 'opj'
 
     run_simple('0.0.0.0', 5004, app, use_debugger=False, use_reloader=True,
         extra_files=extra_files)
+    # To debug ssl:
+    # run_simple('localhost', 5004, app, use_debugger=True, use_reloader=True,
+    #     extra_files=extra_files, ssl_context='adhoc')
