@@ -1,4 +1,4 @@
-FROM ubuntu:14.10
+FROM ubuntu:16.04
 
 MAINTAINER eliotj@princeton.edu
 
@@ -38,11 +38,10 @@ RUN pip2.7 install Pillow
 WORKDIR /opt
 
 # Get loris and unzip. 
-# TODO: Move to specific tag later
-RUN wget --no-check-certificate https://github.com/loris-imageserver/loris/archive/development.zip \
-	&& unzip development.zip \
-	&& mv loris-development/ loris/ \
-	&& rm development.zip
+RUN wget --no-check-certificate https://github.com/loris-imageserver/loris/archive/2.0.1.zip \
+	&& unzip 2.0.1.zip \
+	&& mv loris-2.0.1/ loris/ \
+	&& rm 2.0.1.zip
 
 RUN useradd -d /var/www/loris -s /sbin/false loris
 
