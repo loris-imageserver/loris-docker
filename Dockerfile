@@ -56,9 +56,12 @@ RUN cp -R tests/img/* /usr/local/share/images/
 
 RUN ./setup.py install 
 COPY loris2.conf etc/loris2.conf
-COPY webapp.py loris/webapp.py
 
 WORKDIR /opt/loris/loris
+
+# bind test server to 0.0.0.0
+RUN sed -i -- 's/localhost/0.0.0.0/g' webapp.py
+RUN sed -i 's/app = create_app(debug=True)/app = create_app(debug=False, config_file_path=conf_fp)/g' webapp.py
 
 EXPOSE 5004
 CMD ["python", "webapp.py"]
