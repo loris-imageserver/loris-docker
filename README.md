@@ -1,3 +1,5 @@
+**Note:** This repository has not been maintained all that well. Fixes are welcome, but you might also want to look at https://github.com/bodleian/loris-grok-docker
+
 Docker build of Loris IIIF Image Server
 ===========
 
