@@ -47,13 +47,11 @@ RUN useradd -d /var/www/loris -s /sbin/false loris
 
 WORKDIR /opt/loris
 
-# Create image directory
+# Create image and cache directories
 RUN mkdir /usr/local/share/images
+RUN chmod -R 777 /usr/local/share/images
 RUN mkdir /var/cache/loris
 RUN chmod -R 777 /var/cache/loris
-
-# Load example images
-# RUN cp -R tests/img/* /usr/local/share/images/
 
 RUN ./setup.py install 
 COPY loris2.conf etc/loris2.conf
