@@ -1,0 +1,14 @@
+version: '3'
+ 
+services:
+
+  web:
+    build: ./loris
+    volumes:
+      - ./content:/usr/local/share/images
+    ports:
+      - "5004:5004"
+
+volumes:
+  content:
+    driver: local
