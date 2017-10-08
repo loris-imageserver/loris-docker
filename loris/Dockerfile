@@ -26,7 +26,7 @@ RUN ln -s /usr/lib/`uname -i`-linux-gnu/libfreetype.so /usr/lib/ \
 	&& ln -s /usr/lib/`uname -i`-linux-gnu/libjpeg.so /usr/lib/ \
 	&& ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib/ \
 	&& ln -s /usr/lib/`uname -i`-linux-gnu/liblcms.so /usr/lib/ \
-	&& ln -s /usr/lib/`uname -i`-linux-gnu/libtiff.so /usr/lib/ \
+	&& ln -s /usr/lib/`uname -i`-linux-gnu/libtiff.so /usr/lib/
 
 RUN echo "/usr/local/lib" >> /etc/ld.so.conf && ldconfig
 
@@ -39,9 +39,9 @@ WORKDIR /opt
 
 # Get loris and unzip. 
 RUN wget --no-check-certificate https://github.com/loris-imageserver/loris/archive/v2.1.0-final.zip \
-	&& unzip loris-2.1.0-final.zip \
+	&& unzip v2.1.0-final.zip \
 	&& mv loris-2.1.0-final/ loris/ \
-	&& rm loris-2.1.0-final.zip
+	&& rm v2.1.0-final.zip
 
 RUN useradd -d /var/www/loris -s /sbin/false loris
 
@@ -49,9 +49,11 @@ WORKDIR /opt/loris
 
 # Create image directory
 RUN mkdir /usr/local/share/images
+RUN mkdir /var/cache/loris
+RUN chmod -R 777 /var/cache/loris
 
 # Load example images
-RUN cp -R tests/img/* /usr/local/share/images/
+# RUN cp -R tests/img/* /usr/local/share/images/
 
 RUN ./setup.py install 
 COPY loris2.conf etc/loris2.conf
