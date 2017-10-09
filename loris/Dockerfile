@@ -26,7 +26,7 @@ RUN ln -s /usr/lib/`uname -i`-linux-gnu/libfreetype.so /usr/lib/ \
 	&& ln -s /usr/lib/`uname -i`-linux-gnu/libjpeg.so /usr/lib/ \
 	&& ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib/ \
 	&& ln -s /usr/lib/`uname -i`-linux-gnu/liblcms.so /usr/lib/ \
-	&& ln -s /usr/lib/`uname -i`-linux-gnu/libtiff.so /usr/lib/ \
+	&& ln -s /usr/lib/`uname -i`-linux-gnu/libtiff.so /usr/lib/
 
 RUN echo "/usr/local/lib" >> /etc/ld.so.conf && ldconfig
 
@@ -39,24 +39,26 @@ WORKDIR /opt
 
 # Get loris and unzip. 
 RUN wget --no-check-certificate https://github.com/loris-imageserver/loris/archive/v2.1.0-final.zip \
-	&& unzip loris-2.1.0-final.zip \
+	&& unzip v2.1.0-final.zip \
 	&& mv loris-2.1.0-final/ loris/ \
-	&& rm loris-2.1.0-final.zip
+	&& rm v2.1.0-final.zip
 
 RUN useradd -d /var/www/loris -s /sbin/false loris
 
 WORKDIR /opt/loris
 
-# Create image directory
+# Create image and cache directories
 RUN mkdir /usr/local/share/images
-
-# Load example images
-RUN cp -R tests/img/* /usr/local/share/images/
+RUN chmod -R 777 /usr/local/share/images
+RUN mkdir /var/cache/loris
+RUN chmod -R 777 /var/cache/loris
 
 RUN ./setup.py install 
 COPY loris2.conf etc/loris2.conf
 
 WORKDIR /opt/loris/loris
+
+RUN wget https://raw.githubusercontent.com/princeton/loris/30c010070ab9d46c0d3e56f6115c11810ce7e639/loris/s3resolver.py
 
 # bind test server to 0.0.0.0
 RUN sed -i -- 's/localhost/0.0.0.0/g' webapp.py
