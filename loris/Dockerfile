@@ -58,6 +58,8 @@ COPY loris2.conf etc/loris2.conf
 
 WORKDIR /opt/loris/loris
 
+RUN wget https://raw.githubusercontent.com/princeton/loris/30c010070ab9d46c0d3e56f6115c11810ce7e639/loris/s3resolver.py
+
 # bind test server to 0.0.0.0
 RUN sed -i -- 's/localhost/0.0.0.0/g' webapp.py
 RUN sed -i 's/app = create_app(debug=True)/app = create_app(debug=False, config_file_path=conf_fp)/g' webapp.py
