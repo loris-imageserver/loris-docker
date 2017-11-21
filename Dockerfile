@@ -39,9 +39,9 @@ WORKDIR /opt
 
 # Get loris and unzip. 
 RUN wget --no-check-certificate https://github.com/loris-imageserver/loris/archive/v2.1.0-final.zip \
-	&& unzip loris-2.1.0-final.zip \
+	&& unzip v2.1.0-final.zip \
 	&& mv loris-2.1.0-final/ loris/ \
-	&& rm loris-2.1.0-final.zip
+	&& rm v2.1.0-final.zip
 
 RUN useradd -d /var/www/loris -s /sbin/false loris
 
