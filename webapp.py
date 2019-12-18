@@ -55,7 +55,6 @@ def create_app(debug=False, debug_jp2_transformer='kdu', config_file_path=''):
         config['img.ImageCache']['cache_dp'] = '/tmp/loris/cache/img'
         config['img_info.InfoCache']['cache_dp'] = '/tmp/loris/cache/info'
         config['resolver']['impl'] = 'loris.resolver.SimpleFSResolver'
-        config['resolver']['src_img_root'] = path.join(project_dp,'tests','img')
 
         if debug_jp2_transformer == 'opj':
             from transforms import OPJ_JP2Transformer
