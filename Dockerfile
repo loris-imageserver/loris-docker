@@ -2,7 +2,7 @@ FROM ubuntu:18.04
 
 ENV HOME /root
 
-# no ncurses prompts
+# No ncurses prompts
 ENV DEBIAN_FRONTEND noninteractive
 
 # Update packages and install tools 
@@ -25,7 +25,7 @@ RUN apt-get install -y --no-install-recommends \
 
 RUN python3 -m pip install --upgrade pip
 
-# `configobj` here is not the built in `ConfigParser` and is required to run the loris `setup.py`
+# `configobj` is not the built in `ConfigParser` and is required to run `setup.py`
 RUN python3 -m pip install uwsgi==2.0.18 configobj==5.0.6
 
 
@@ -40,7 +40,7 @@ RUN wget --quiet https://github.com/loris-imageserver/loris/archive/v2.3.3.zip \
 	&& mv loris-2.3.3 loris \
 	&& rm v2.3.3.zip
 
-RUN useradd -d /var/www/loris -s /sbin/false loris
+RUN useradd --home /var/www/loris --shell /sbin/false --uid 1005 loris
 
 RUN mkdir /usr/local/share/images
 
