@@ -5,7 +5,7 @@ docker run \
     --rm \
     --name loris \
     --publish 5004:5004 \
-    loris 
+    elifesciences/loris:${IMAGE_TAG:-latest} 
 
 # stop+remove with:
-# docker rm -f loris--inst
+# docker rm -f loris
