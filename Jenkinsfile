@@ -8,16 +8,15 @@ elifePipeline {
     node('containers-jenkins-plugin') {
         stage 'Build images', {
             checkout scm
-            sh 'docker build --tag loris .'
+            sh './build.sh'
         }
 
         stage 'Smoke tests', {
             try {
-                sh 'docker run --name loris--inst loris &'
-                sh 'docker-wait-healthy loris--inst 60'
+                sh './run.sh &'
+                sh 'docker-wait-healthy loris 60'
             } finally {
-                sh 'docker stop loris--inst'
-                sh 'docker rm -f loris--inst'
+                sh 'docker stop loris'
             }
         }
 

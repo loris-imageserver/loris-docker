@@ -10,7 +10,7 @@ RUN apt-get update -y
 RUN apt-get install -y --no-install-recommends \
     gcc \
     python3-dev python3-setuptools python3-pip \
-    wget git unzip \
+    wget curl git unzip \
     libjpeg8 \
     libjpeg8-dev \
     libfreetype6 \
@@ -66,6 +66,9 @@ COPY uwsgi.ini /etc/loris2/uwsgi.ini
 # overwrites the one generated during `setup.py`
 COPY loris2.wsgi /var/www/loris2/loris2.wsgi 
 
+# heartbeat
+COPY healthcheck.sh .
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD ./healthcheck.sh
 
 # Run
 
