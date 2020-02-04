@@ -8,12 +8,12 @@ elifePipeline {
     node('containers-jenkins-plugin') {
         stage 'Build images', {
             checkout scm
-            sh './build.sh'
+            sh 'IMAGE_TAG=${commit} ./build.sh'
         }
 
         stage 'Smoke tests', {
             try {
-                sh './run.sh &'
+                sh 'IMAGE_TAG=${commit} ./run.sh &'
                 sh 'docker-wait-healthy loris 60'
             } finally {
                 sh 'docker stop loris'
