@@ -45,8 +45,6 @@ RUN wget --quiet https://github.com/loris-imageserver/loris/archive/v2.3.3.zip \
 	&& mv loris-2.3.3 loris \
 	&& rm v2.3.3.zip
 
-RUN useradd --home /var/www/loris --shell /sbin/false --uid 1002 loris
-
 RUN mkdir /usr/local/share/images
 
 
