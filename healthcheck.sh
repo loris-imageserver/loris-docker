@@ -9,4 +9,6 @@ set -e
 
 # -w timeout (seconds)
 # -v verbose
-nc localhost 5004 -v -w 1
+#nc localhost 5004 -v -w 1
+
+# also doesn't work. no healthchecks for you.
