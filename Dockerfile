@@ -57,7 +57,7 @@ RUN cp -R tests/img/* /usr/local/share/images/
 
 # note: setup.py does lots of fiddling with the environment, creation of directories, permissions, 
 # copying and generating files. just let it do it's thing and we'll override anything afterwards.
-RUN python3 setup.py install
+RUN python3 setup.py install --loris-owner www-data --loris-group www-data
 COPY loris2.conf etc/loris2.conf
 
 
