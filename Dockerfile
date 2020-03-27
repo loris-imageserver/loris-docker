@@ -6,22 +6,24 @@ ENV HOME /root
 ENV DEBIAN_FRONTEND noninteractive
 
 # Update packages and install tools 
-RUN apt-get update -y
+RUN apt-get update -y --fix-missing
 RUN apt-get install -y --no-install-recommends \
     gcc \
     python3-dev python3-setuptools python3-pip \
     wget curl git unzip \
     libjpeg8 \
     libjpeg8-dev \
+    libjpeg-turbo8-dev \
     libfreetype6 \
     libfreetype6-dev \
-    zlib1g-dev \
     liblcms2-2 \
     liblcms2-dev \
     liblcms2-utils \
     libtiff5-dev \
+    libwebp-dev \
     libxml2-dev \
-    libxslt1-dev
+    libxslt1-dev \
+    zlib1g-dev
 
 RUN python3 -m pip install --upgrade pip
 
@@ -40,10 +42,10 @@ RUN python3 -m pip install newrelic==5.8.0.136
 # Install loris
 WORKDIR /opt
 
-RUN wget --quiet https://github.com/loris-imageserver/loris/archive/v2.3.3.zip \
-	&& unzip v2.3.3.zip \
-	&& mv loris-2.3.3 loris \
-	&& rm v2.3.3.zip
+RUN wget --quiet https://github.com/loris-imageserver/loris/archive/v3.0.0.zip \
+	&& unzip v3.0.0.zip \
+	&& mv loris-3.0.0 loris \
+	&& rm v3.0.0.zip
 
 RUN mkdir /usr/local/share/images
 
@@ -53,21 +55,27 @@ WORKDIR /opt/loris
 
 # Load example images
 # TODO: keep this for smoke tests?
-RUN cp -R tests/img/* /usr/local/share/images/
+#RUN cp -R tests/img/* /usr/local/share/images/
 
-# note: setup.py does lots of fiddling with the environment, creation of directories, permissions, 
-# copying and generating files. just let it do it's thing and we'll override anything afterwards.
-RUN python3 setup.py install --loris-owner www-data --loris-group www-data
-COPY loris2.conf etc/loris2.conf
+# this is what uwsgi will use to init loris.
+# overwrites the one generated during `setup.py`
+COPY loris2.wsgi /var/www/loris2/loris2.wsgi 
 
 
 # Configure uwsgi+wsgi
 # the .ini file configures uwsgi and tells it where to find the `.wsgi` file
 COPY uwsgi.ini /etc/loris2/uwsgi.ini
 
-# this is what uwsgi will use to init loris.
-# overwrites the one generated during `setup.py`
-COPY loris2.wsgi /var/www/loris2/loris2.wsgi 
+# referenced in loris2.wsgi
+COPY loris2.conf etc/loris2.conf
+
+# avoid setup.py in loris 3.0
+RUN pip install -r requirements.txt
+
+# new step for 3.0 that was previously part of setup.py
+RUN PYTHONPATH=/opt/loris/ python3 ./bin/setup_directories.py
+
+RUN chown www-data:www-data -R .
 
 # heartbeat
 COPY healthcheck.sh .
