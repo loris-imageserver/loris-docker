@@ -21,8 +21,8 @@ elifePipeline {
         }
     }
 
-    stage 'Deploy on ci, continuumtest', {
-        elifeMainlineOnly {
+    elifeMainlineOnly {
+        stage 'Deploy on ci, continuumtest', {
             def deployments = [
                 ci: {
                     lock('iiif--ci') {
@@ -39,24 +39,23 @@ elifePipeline {
             ]
             parallel deployments
         }
-    }
 
-    // deploy on end2end and run the elife-spectrum tests
-    stage 'End2end tests', {
-        elifeSpectrum(
-            deploy: [
-                stackname: 'iiif--end2end',
-                revision: commit,
-                folder: '/opt/loris',
-                concurrency: 'blue-green'
-            ]
-        )
-    }
+        stage 'End2end tests', {
+            elifeSpectrum(
+                deploy: [
+                    stackname: 'iiif--end2end',
+                    revision: commit,
+                    folder: '/opt/loris',
+                    concurrency: 'blue-green'
+                ]
+            )
+        }
 
-    stage 'Deploy to prod', {
-        lock('iiif--prod') {
-            builderDeployRevision 'iiif--prod', commit, 'blue-green'
-            builderSmokeTests 'iiif--prod', '/opt/loris'
+        stage 'Deploy to prod', {
+            lock('iiif--prod') {
+                builderDeployRevision 'iiif--prod', commit, 'blue-green'
+                builderSmokeTests 'iiif--prod', '/opt/loris'
+            }
         }
     }
 }
