@@ -46,7 +46,13 @@ elifePipeline {
                     stackname: 'iiif--end2end',
                     revision: commit,
                     folder: '/opt/loris',
-                    concurrency: 'blue-green'
+                    concurrency: 'blue-green',
+                    rollbackStep: {
+                        // revert to 'latest'. not great but better than the default 'approved',
+                        // which doesn't exist for this project.
+                        builderDeployRevision 'journal-cms--end2end', 'latest'
+                        builderSmokeTests 'iiif--end2end', '/opt/loris'
+                    }
                 ]
             )
         }
