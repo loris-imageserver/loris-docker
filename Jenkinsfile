@@ -19,11 +19,48 @@ elifePipeline {
                 sh "docker stop loris"
             }
         }
+    }
 
-        elifeMainlineOnly {
-            stage 'Push images', {
-                image = DockerImage.elifesciences(this, "loris", commit)
-                image.push().tag('latest').push()
+    elifeMainlineOnly {
+        stage 'Deploy on ci, continuumtest', {
+            def deployments = [
+                ci: {
+                    lock('iiif--ci') {
+                        builderDeployRevision 'iiif--ci', commit
+                        builderSmokeTests 'iiif--ci', '/opt/loris'
+                    }
+                },
+                continuumtest: {
+                    lock('iiif--continuumtest') {
+                        builderDeployRevision 'iiif--continuumtest', commit
+                        builderSmokeTests 'iiif--continuumtest', '/opt/loris'
+                    }
+                }
+            ]
+            parallel deployments
+        }
+
+        stage 'End2end tests', {
+            elifeSpectrum(
+                deploy: [
+                    stackname: 'iiif--end2end',
+                    revision: commit,
+                    folder: '/opt/loris',
+                    concurrency: 'blue-green',
+                    rollbackStep: {
+                        // revert to 'latest'. not great but better than the default 'approved',
+                        // which doesn't exist for this project.
+                        builderDeployRevision 'journal-cms--end2end', 'latest'
+                        builderSmokeTests 'iiif--end2end', '/opt/loris'
+                    }
+                ]
+            )
+        }
+
+        stage 'Deploy to prod', {
+            lock('iiif--prod') {
+                builderDeployRevision 'iiif--prod', commit, 'blue-green'
+                builderSmokeTests 'iiif--prod', '/opt/loris'
             }
         }
     }
