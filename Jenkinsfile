@@ -19,6 +19,13 @@ elifePipeline {
                 sh "docker stop loris"
             }
         }
+
+        elifeMainlineOnly {
+            stage 'Push image', {
+                image = DockerImage.elifesciences(this, "loris", commit)
+                image.push()
+            }
+        }
     }
 
     elifeMainlineOnly {
@@ -61,6 +68,13 @@ elifePipeline {
             lock('iiif--prod') {
                 builderDeployRevision 'iiif--prod', commit, 'blue-green'
                 builderSmokeTests 'iiif--prod', '/opt/loris'
+            }
+        }
+
+        node('containers-jenkins-plugin') {
+            stage 'Tag image', {
+                image = DockerImage.elifesciences(this, "loris", commit)
+                image.tag('latest').push()
             }
         }
     }
