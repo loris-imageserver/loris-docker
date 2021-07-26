@@ -69,6 +69,9 @@ COPY uwsgi.ini /etc/loris2/uwsgi.ini
 # referenced in loris2.wsgi
 COPY loris2.conf etc/loris2.conf
 
+# pillow 8.2 has a fix for corrupted tif images in it
+RUN sed -i 's/pillow==6.2.0/pillow==8.2.0/' requirements.txt
+
 # avoid setup.py in loris 3.0
 RUN pip install -r requirements.txt
 

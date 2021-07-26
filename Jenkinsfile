@@ -20,10 +20,19 @@ elifePipeline {
             }
         }
 
-        elifeMainlineOnly {
-            stage 'Push image', {
-                image = DockerImage.elifesciences(this, "loris", commit)
-                image.push()
+        stage 'Push image', {
+            image = DockerImage.elifesciences(this, "loris", commit)
+        
+            elifePullRequestOnly {
+                def branchName = env.CHANGE_BRANCH
+                def tagName = branchName.replaceAll("/", "_")
+                image.tag(tagName).push()
+            }
+
+            elifeMainlineOnly {
+                stage 'Push image', {
+                    image.push()
+                }
             }
         }
     }
