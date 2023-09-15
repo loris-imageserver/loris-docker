@@ -30,15 +30,6 @@ RUN python3 -m pip install --upgrade pip
 # `configobj` is not the built in `ConfigParser` and is required to run `setup.py`
 RUN python3 -m pip install uwsgi==2.0.18 configobj==5.0.6
 
-# `newrelic` here is the NewRelic APM agent. 
-# if the container is run with the envvar `NEW_RELIC_ENABLED` equal to `"true"`, then the 
-# WSGI loris application will be wrapped by the `newrelic` agent.
-RUN python3 -m pip install newrelic==7.10.0.175
-
-
-# [kakadu is closed source and won't be installed]
-
-
 # Install loris
 WORKDIR /opt
 
